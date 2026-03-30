@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>互動式網底標靶</title>
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f0f0f0;
+      padding: 20px;
+    }
+    .controls-panel {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      width: 350px;
+    }
+    .control-item {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+    }
+    .control-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    label {
+      font-weight: bold;
+      cursor: pointer;
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin-top: 5px;
+    }
+    .value-display {
+      font-size: 0.9em;
+      color: #007BFF;
+      font-weight: bold;
+      float: right;
+    }
+    .note {
+      font-size: 0.8em;
+      color: #888;
+      display: block;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="controls-panel">
+    <div class="control-item">
+      <label>
+        <input type="checkbox" id="toggle-target" checked> 
+        1. 顯示環靶內容
+      </label>
+    </div>
+    
+    <div class="control-item">
+      <label for="gray-slider">
+        2. 底色灰階調整 <span class="value-display" id="gray-val-text">211</span>
+      </label>
+      <input type="range" id="gray-slider" min="0" max="255" value="211">
+    </div>
+
+    <div class="control-item">
+      <label for="size-slider">
+        3. 網底顆粒大小 <span class="value-display" id="size-val-text">0.8</span>
+      </label>
+      <input type="range" id="size-slider" min="0" max="5" step="0.1" value="0.8">
+    </div>
+
+    <div class="control-item">
+      <label for="spacing-slider">
+        4. 網底間距 <span class="value-display" id="spacing-val-text">4</span>
+      </label>
+      <span class="note">*數值越小，顆粒排列越密集</span>
+      <input type="range" id="spacing-slider" min="0" max="20" step="0.5" value="4">
+    </div>
+  </div>
+
+  <svg width="170mm" height="170mm" viewBox="-85 -85 170 170" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <style>
+        .ring-black { fill: none; stroke: black; stroke-width: 0.5; }
+        .ring-white { fill: none; stroke: white; stroke-width: 0.5; }
+        .text-label { font-family: sans-serif; font-size: 6px; fill: black; text-anchor: middle;}
+      </style>
+      
+      <pattern id="dot-pattern" width="4" height="4" patternUnits="userSpaceOnUse">
+        <circle id="dot-circle" cx="2" cy="2" r="0.8" fill="#666666" />
+      </pattern>
+    </defs>
+
+    <rect id="bg-rect" x="-85" y="-85" width="170" height="170" fill="rgb(211,211,211)" stroke="black" stroke-width="1" />
+
+    <g id="target-content">
+      <circle class="ring-black" r="77.75" /> 
+      <circle class="ring-black" r="69.75" /> 
+      <circle class="ring-black" r="61.75" /> 
+      <circle class="ring-black" r="53.75" /> 
+      <circle class="ring-black" r="45.75" /> 
+      <circle class="ring-black" r="37.75" /> 
+      <circle r="29.75" fill="black" />
+
+      <circle class="ring-white" r="21.75" /> 
+      <circle class="ring-white" r="13.75" /> 
+      <circle class="ring-white" r="5.75" />  
+
+      <text x="0" y="-75" class="text-label"></text>
+      <text x="0" y="-68" class="text-label"></text>
+    </g>
+
+    <rect x="-85" y="-85" width="170" height="170" fill="url(#dot-pattern)" stroke="none" style="pointer-events: none;" />
+  </svg>
+
+  <script>
+    // 取得 HTML 元素
+    const toggleTargetCheckbox = document.getElementById('toggle-target');
+    const graySlider = document.getElementById('gray-slider');
+    const grayValText = document.getElementById('gray-val-text');
+    const bgRect = document.getElementById('bg-rect');
+    const targetContent = document.getElementById('target-content');
+    
+    // 新增的元素
+    const sizeSlider = document.getElementById('size-slider');
+    const sizeValText = document.getElementById('size-val-text');
+    const spacingSlider = document.getElementById('spacing-slider');
+    const spacingValText = document.getElementById('spacing-val-text');
+    const dotPattern = document.getElementById('dot-pattern');
+    const dotCircle = document.getElementById('dot-circle');
+
+    // 1. 切換環靶顯示/隱藏
+    toggleTargetCheckbox.addEventListener('change', function() {
+      targetContent.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // 2. 即時調整底色灰階
+    graySlider.addEventListener('input', function() {
+      const v = this.value;
+      grayValText.textContent = v;
+      bgRect.setAttribute('fill', `rgb(${v}, ${v}, ${v})`);
+    });
+
+    // 3. 即時調整顆粒大小
+    sizeSlider.addEventListener('input', function() {
+      const v = this.value;
+      sizeValText.textContent = v;
+      // 改變圓點的半徑 (r)
+      dotCircle.setAttribute('r', v);
+    });
+
+    // 4. 即時調整網底間距 (密集度)
+    spacingSlider.addEventListener('input', function() {
+      const v = parseFloat(this.value);
+      spacingValText.textContent = v;
+      
+      // 改變 pattern 的長寬來控制間距
+      // 當 v = 0 時，SVG 預設不會渲染 pattern，正好符合隱藏網底的需求
+      dotPattern.setAttribute('width', v);
+      dotPattern.setAttribute('height', v);
+      
+      // 自動調整圓點的圓心 (cx, cy) 讓它保持在網格的正中間
+      dotCircle.setAttribute('cx', v / 2);
+      dotCircle.setAttribute('cy', v / 2);
+    });
+  </script>
+
+</body>
+</html>
