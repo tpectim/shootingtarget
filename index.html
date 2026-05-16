@@ -52,7 +52,6 @@
       display: block;
       margin-top: 5px;
     }
-    /* 稍微優化 color picker 的外觀 */
     input[type="color"] {
       width: 100%;
       height: 35px;
@@ -62,6 +61,53 @@
       border-radius: 4px;
       padding: 2px;
       background-color: #fff;
+    }
+    .print-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .print-btn {
+      flex-grow: 1;
+      padding: 8px 10px;
+      cursor: pointer;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 1em;
+      transition: background-color 0.2s;
+    }
+    .print-btn:hover {
+      background-color: #0056b3;
+    }
+
+    /* === 列印專用樣式 === */
+    @media print {
+      /* 隱藏控制面板 */
+      .controls-panel {
+        display: none !important;
+      }
+      
+      /* 設定頁面與置中 */
+      @page {
+        size: A4 portrait; /* 強制設定為 A4 直式 */
+        margin: 0;         /* 移除預設邊距，避免瀏覽器印出頁首頁尾 */
+      }
+      
+      body {
+        background-color: white;
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        /* 利用 Flexbox 讓 SVG 水平與垂直皆置中 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
     }
   </style>
 </head>
@@ -103,9 +149,20 @@
       </label>
       <input type="color" id="color-picker" value="#666666">
     </div>
+
+    <div class="control-item">
+      <label for="print-scale">
+        6. 列印設定與縮放
+      </label>
+      <span class="note">*5公尺訓練請輸入 50%</span>
+      <div class="print-row">
+        <input type="number" id="print-scale" value="100" min="10" max="200" style="width: 70px; padding: 5px;"> %
+        <button id="print-btn" class="print-btn">列印標靶</button>
+      </div>
+    </div>
   </div>
 
-  <svg width="170mm" height="170mm" viewBox="-85 -85 170 170" xmlns="http://www.w3.org/2000/svg">
+  <svg id="target-svg" width="170mm" height="170mm" viewBox="-85 -85 170 170" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <style>
         .ring-black { fill: none; stroke: black; stroke-width: 0.5; }
@@ -156,8 +213,11 @@
     const dotPattern = document.getElementById('dot-pattern');
     const dotCircle = document.getElementById('dot-circle');
     
-    // 新增：取得顏色選擇器元素
+    // 取得顏色與列印相關的元素
     const colorPicker = document.getElementById('color-picker');
+    const printBtn = document.getElementById('print-btn');
+    const printScaleInput = document.getElementById('print-scale');
+    const targetSvg = document.getElementById('target-svg');
 
     // 1. 切換環靶顯示/隱藏
     toggleTargetCheckbox.addEventListener('change', function() {
@@ -175,7 +235,6 @@
     sizeSlider.addEventListener('input', function() {
       const v = this.value;
       sizeValText.textContent = v;
-      // 改變圓點的半徑 (r)
       dotCircle.setAttribute('r', v);
     });
 
@@ -184,19 +243,43 @@
       const v = parseFloat(this.value);
       spacingValText.textContent = v;
       
-      // 改變 pattern 的長寬來控制間距
-      // 當 v = 0 時，SVG 預設不會渲染 pattern，正好符合隱藏網底的需求
       dotPattern.setAttribute('width', v);
       dotPattern.setAttribute('height', v);
-      
-      // 自動調整圓點的圓心 (cx, cy) 讓它保持在網格的正中間
       dotCircle.setAttribute('cx', v / 2);
       dotCircle.setAttribute('cy', v / 2);
     });
 
-    // 5. 新增：即時調整網底顆粒顏色
+    // 5. 即時調整網底顆粒顏色
     colorPicker.addEventListener('input', function() {
       dotCircle.setAttribute('fill', this.value);
+    });
+
+    // 6. 處理列印與縮放邏輯
+    printBtn.addEventListener('click', function() {
+      const scaleValue = parseFloat(printScaleInput.value);
+      
+      // 確保輸入的比例是有效的數字
+      if (isNaN(scaleValue) || scaleValue <= 0) {
+        alert("請輸入有效的縮放比例！");
+        return;
+      }
+
+      // 計算新的尺寸 (SVG 預設為 170mm)
+      const originalSize = 170;
+      const newSize = originalSize * (scaleValue / 100);
+      
+      // 動態修改 SVG 的實體長寬
+      targetSvg.setAttribute('width', newSize + 'mm');
+      targetSvg.setAttribute('height', newSize + 'mm');
+
+      // 呼叫瀏覽器的列印功能
+      window.print();
+    });
+
+    // 列印對話框關閉後，自動將網頁上的 SVG 恢復為 100% 大小，方便繼續編輯
+    window.addEventListener('afterprint', function() {
+      targetSvg.setAttribute('width', '170mm');
+      targetSvg.setAttribute('height', '170mm');
     });
   </script>
 
